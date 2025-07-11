@@ -1,3 +1,6 @@
+// Load environment variables FIRST before any other imports
+import './config/env.js';
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -5,7 +8,6 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
-import dotenv from 'dotenv';
 import { connectDB } from './config/database.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
@@ -13,16 +15,13 @@ import postRoutes from './routes/posts.js';
 import schedulerRoutes from './routes/scheduler.js';
 import analyticsRoutes from './routes/analytics.js';
 import socialRoutes from './routes/social.js';
-import videoRoutes from './routes/videos.js';
+import videoRoutes, { streamRouter } from './routes/videos.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import schedulerService from './services/schedulerService.js';
 
-// Load environment variables
-dotenv.config({ path: './config.env' });
-
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Connect to database
 connectDB();
@@ -51,8 +50,11 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://yourdomain.com'] 
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
-  credentials: true
+    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
 }));
 app.use(compression());
 app.use(morgan('combined'));
@@ -79,6 +81,7 @@ app.use('/api/scheduler', schedulerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/stream', streamRouter);
 
 // Error handling middleware
 app.use(notFound);

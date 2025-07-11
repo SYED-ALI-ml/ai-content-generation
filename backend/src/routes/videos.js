@@ -5,9 +5,10 @@ import { protect } from '../middleware/auth.js';
 import { rateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+const streamRouter = express.Router();
 const videoController = new VideoController();
 
-// Apply authentication middleware to all routes
+// Apply authentication middleware to all routes except streaming
 router.use(protect);
 
 // Validation middleware
@@ -173,6 +174,25 @@ router.put('/:id',
 );
 
 /**
+ * @route   POST /api/videos/:id/force-completion
+ * @desc    Force completion check for a stuck video
+ * @access  Private (owner only)
+ */
+router.post('/:id/force-completion',
+  validateVideoId,
+  videoController.forceCompletionCheck
+);
+
+/**
+ * @route   POST /api/videos/check-stuck
+ * @desc    Check all stuck videos and complete them if possible
+ * @access  Private
+ */
+router.post('/check-stuck',
+  videoController.checkStuckVideos
+);
+
+/**
  * @route   DELETE /api/videos/:id
  * @desc    Delete video and associated files
  * @access  Private (owner only)
@@ -182,4 +202,29 @@ router.delete('/:id',
   videoController.deleteVideo
 );
 
-export default router; 
+// Streaming routes (no auth middleware)
+/**
+ * @route   OPTIONS /api/stream/:id
+ * @desc    Handle CORS preflight for video streaming
+ * @access  Public
+ */
+streamRouter.options('/:id', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.status(200).end();
+});
+
+/**
+ * @route   GET /api/stream/:id
+ * @desc    Stream video file for playback (token via query param)
+ * @access  Private (owner or public videos)
+ */
+streamRouter.get('/:id',
+  validateVideoId,
+  videoController.streamVideo
+);
+
+export default router;
+export { streamRouter }; 

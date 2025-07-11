@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.vercel
+
+# Google Cloud service account credentials
+backend/service-account-key.json
+**/service-account-key.json

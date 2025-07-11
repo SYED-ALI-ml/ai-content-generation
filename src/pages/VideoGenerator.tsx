@@ -9,6 +9,14 @@ interface VideoParameters {
   durationSeconds: number;
   sampleCount: number;
   enhancePrompt: boolean;
+  seed?: number;
+  videoGenerationConfig?: {
+    movement: 'slow' | 'medium' | 'fast';
+    camera: 'zoom_in' | 'zoom_out' | 'pan_left' | 'pan_right' | 'static';
+    style: 'cinematic' | 'photorealistic' | 'anime' | 'cartoon' | 'artistic';
+    lighting: 'natural' | 'sunset' | 'sunrise' | 'golden_hour' | 'blue_hour' | 'studio';
+    colorTone: 'warm' | 'cool' | 'neutral' | 'vibrant' | 'muted';
+  };
 }
 
 interface Video {
@@ -59,7 +67,15 @@ const VideoGenerator: React.FC = () => {
     aspectRatio: '16:9',
     durationSeconds: 5,
     sampleCount: 1,
-    enhancePrompt: true
+    enhancePrompt: true,
+    seed: undefined,
+    videoGenerationConfig: {
+      movement: 'medium',
+      camera: 'static',
+      style: 'cinematic',
+      lighting: 'natural',
+      colorTone: 'neutral'
+    }
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -301,210 +317,379 @@ const VideoGenerator: React.FC = () => {
         </div>
 
         {activeTab === 'generate' && (
-          <div className="max-w-4xl mx-auto">
-            <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8`}>
-              <h2 className="text-2xl font-semibold mb-6">Create New Video</h2>
+          <div className="max-w-6xl mx-auto">
+            <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8`}>
+              <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Neural Studio
+              </h2>
+              <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
+                Transform your imagination into cinematic reality with quantum-powered AI
+              </p>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Video Type Selection */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Video Type</label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="text-to-video"
-                        checked={videoType === 'text-to-video'}
-                        onChange={(e) => setVideoType(e.target.value as 'text-to-video' | 'image-to-video')}
-                        className="mr-2"
-                      />
+                <div className="text-center">
+                  <label className="block text-lg font-semibold mb-4 text-purple-600 dark:text-purple-400">Generation Mode</label>
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => setVideoType('text-to-video')}
+                      className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                        videoType === 'text-to-video'
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
                       Text to Video
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        value="image-to-video"
-                        checked={videoType === 'image-to-video'}
-                        onChange={(e) => setVideoType(e.target.value as 'text-to-video' | 'image-to-video')}
-                        className="mr-2"
-                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoType('image-to-video')}
+                      className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                        videoType === 'image-to-video'
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
                       Image to Video
-                    </label>
+                    </button>
                   </div>
                 </div>
 
-                {/* Basic Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Title *</label>
-                    <input
-                      type="text"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        theme === 'dark' 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
-                    <input
-                      type="text"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        theme === 'dark' 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      placeholder="nature, landscape, peaceful"
-                    />
-                  </div>
-                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Left Column - Input */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-lg font-semibold mb-3 text-purple-600 dark:text-purple-400">
+                        Neural Input Prompt
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          value={formData.prompt}
+                          onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+                          className={`w-full h-32 px-4 py-3 border-2 rounded-xl resize-none transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+                          placeholder="Describe your vision... e.g., 'A futuristic city at sunset with flying cars and neon lights reflecting on wet streets'"
+                          required
+                        />
+                        <div className="absolute bottom-3 right-3 text-sm text-gray-400">
+                          {formData.prompt.length}/500
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Prompt */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Prompt *</label>
-                  <textarea
-                    value={formData.prompt}
-                    onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md h-24 ${
-                      theme === 'dark' 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    placeholder="Describe the video you want to generate..."
-                    required
-                  />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Title</label>
+                        <input
+                          type="text"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+                          placeholder="Enter video title"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Tags</label>
+                        <input
+                          type="text"
+                          value={formData.tags}
+                          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+                          placeholder="nature, cinematic, 4k"
+                        />
+                      </div>
+                    </div>
 
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className={`w-full px-3 py-2 border rounded-md h-20 ${
-                      theme === 'dark' 
-                        ? 'bg-gray-700 border-gray-600 text-white' 
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                    placeholder="Optional description..."
-                  />
-                </div>
-
-                {/* Image Upload for Image-to-Video */}
-                {videoType === 'image-to-video' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Input Image *</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        theme === 'dark' 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                      required
-                    />
-                    {imagePreview && (
-                      <div className="mt-2">
-                        <img src={imagePreview} alt="Preview" className="max-w-xs rounded-md" />
+                    {/* Image Upload for Image-to-Video */}
+                    {videoType === 'image-to-video' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Input Image</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none`}
+                          required
+                        />
+                        {imagePreview && (
+                          <div className="mt-4">
+                            <img src={imagePreview} alt="Preview" className="max-w-full h-48 object-cover rounded-xl" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
 
-                {/* Video Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
-                    <select
-                      value={parameters.aspectRatio}
-                      onChange={(e) => setParameters({ ...parameters, aspectRatio: e.target.value as any })}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        theme === 'dark' 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                    >
-                      <option value="16:9">16:9 (Landscape)</option>
-                      <option value="1:1">1:1 (Square)</option>
-                      <option value="9:16">9:16 (Portrait)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Duration (seconds)</label>
-                    <div className="flex space-x-4">
-                      {[5, 8, 10, 15].map((duration) => (
-                        <button
-                          key={duration}
-                          type="button"
-                          onClick={() => setParameters({ ...parameters, durationSeconds: duration })}
-                          className={`px-4 py-2 rounded-md font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            parameters.durationSeconds === duration
-                              ? 'bg-blue-600 text-white border-blue-700 shadow'
-                              : theme === 'dark'
-                                ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-blue-700 hover:text-white'
-                                : 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-blue-600 hover:text-white'
-                          }`}
-                        >
-                          {duration} seconds
-                        </button>
-                      ))}
+                  {/* Right Column - Parameters */}
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-lg font-semibold mb-4 text-blue-600 dark:text-blue-400">
+                        Visual Style
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { value: 'cinematic', label: 'Cinematic', desc: 'Hollywood-style production' },
+                          { value: 'anime', label: 'Anime', desc: 'Japanese animation style' },
+                          { value: 'photorealistic', label: 'Realistic', desc: 'Photorealistic rendering' },
+                          { value: 'artistic', label: 'Artistic', desc: 'Creative interpretation' }
+                        ].map((style) => (
+                          <button
+                            key={style.value}
+                            type="button"
+                            onClick={() => setParameters({ 
+                              ...parameters, 
+                              videoGenerationConfig: { 
+                                ...parameters.videoGenerationConfig!, 
+                                style: style.value as any 
+                              } 
+                            })}
+                            className={`p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                              parameters.videoGenerationConfig?.style === style.value
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                            }`}
+                          >
+                            <div className="font-medium">{style.label}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{style.desc}</div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Sample Count</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="4"
-                      value={parameters.sampleCount}
-                      onChange={(e) => setParameters({ ...parameters, sampleCount: parseInt(e.target.value) })}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        theme === 'dark' 
-                          ? 'bg-gray-700 border-gray-600 text-white' 
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Enhance Prompt</label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={parameters.enhancePrompt}
-                        onChange={(e) => setParameters({ ...parameters, enhancePrompt: e.target.checked })}
-                        className="mr-2"
-                      />
-                      Auto-enhance
-                    </label>
+
+                    <div>
+                      <label className="block text-lg font-semibold mb-4 text-green-600 dark:text-green-400">
+                        Duration
+                      </label>
+                      <div className="flex space-x-2">
+                        {[5, 8, 10, 15].map((duration) => (
+                          <button
+                            key={duration}
+                            type="button"
+                            onClick={() => setParameters({ ...parameters, durationSeconds: duration })}
+                            className={`flex-1 py-3 rounded-xl font-medium transition-all duration-300 ${
+                              parameters.durationSeconds === duration
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            {duration}s
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Aspect Ratio</label>
+                        <select
+                          value={parameters.aspectRatio}
+                          onChange={(e) => setParameters({ ...parameters, aspectRatio: e.target.value as any })}
+                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none`}
+                        >
+                          <option value="16:9">16:9 (Landscape)</option>
+                          <option value="1:1">1:1 (Square)</option>
+                          <option value="9:16">9:16 (Portrait)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Sample Count</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="4"
+                          value={parameters.sampleCount}
+                          onChange={(e) => setParameters({ ...parameters, sampleCount: parseInt(e.target.value) })}
+                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                            theme === 'dark' 
+                              ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                          } focus:outline-none`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Advanced Parameters */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold mb-4 text-orange-600 dark:text-orange-400">Advanced Parameters</h3>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Seed (Optional)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="999999999"
+                            value={parameters.seed || ''}
+                            onChange={(e) => setParameters({ 
+                              ...parameters, 
+                              seed: e.target.value ? parseInt(e.target.value) : undefined 
+                            })}
+                            placeholder="Random seed for reproducibility"
+                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                              theme === 'dark' 
+                                ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500 placeholder-gray-400' 
+                                : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500 placeholder-gray-500'
+                            } focus:outline-none`}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Movement</label>
+                            <select
+                              value={parameters.videoGenerationConfig?.movement || 'medium'}
+                              onChange={(e) => setParameters({ 
+                                ...parameters, 
+                                videoGenerationConfig: { 
+                                  ...parameters.videoGenerationConfig!, 
+                                  movement: e.target.value as any 
+                                } 
+                              })}
+                              className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                                theme === 'dark' 
+                                  ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                                  : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                              } focus:outline-none`}
+                            >
+                              <option value="slow">Slow</option>
+                              <option value="medium">Medium</option>
+                              <option value="fast">Fast</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Camera</label>
+                            <select
+                              value={parameters.videoGenerationConfig?.camera || 'static'}
+                              onChange={(e) => setParameters({ 
+                                ...parameters, 
+                                videoGenerationConfig: { 
+                                  ...parameters.videoGenerationConfig!, 
+                                  camera: e.target.value as any 
+                                } 
+                              })}
+                              className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                                theme === 'dark' 
+                                  ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                                  : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                              } focus:outline-none`}
+                            >
+                              <option value="static">Static</option>
+                              <option value="zoom_in">Zoom In</option>
+                              <option value="zoom_out">Zoom Out</option>
+                              <option value="pan_left">Pan Left</option>
+                              <option value="pan_right">Pan Right</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Lighting</label>
+                            <select
+                              value={parameters.videoGenerationConfig?.lighting || 'natural'}
+                              onChange={(e) => setParameters({ 
+                                ...parameters, 
+                                videoGenerationConfig: { 
+                                  ...parameters.videoGenerationConfig!, 
+                                  lighting: e.target.value as any 
+                                } 
+                              })}
+                              className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                                theme === 'dark' 
+                                  ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                                  : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                              } focus:outline-none`}
+                            >
+                              <option value="natural">Natural</option>
+                              <option value="sunset">Sunset</option>
+                              <option value="sunrise">Sunrise</option>
+                              <option value="golden_hour">Golden Hour</option>
+                              <option value="blue_hour">Blue Hour</option>
+                              <option value="studio">Studio</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">Color Tone</label>
+                            <select
+                              value={parameters.videoGenerationConfig?.colorTone || 'neutral'}
+                              onChange={(e) => setParameters({ 
+                                ...parameters, 
+                                videoGenerationConfig: { 
+                                  ...parameters.videoGenerationConfig!, 
+                                  colorTone: e.target.value as any 
+                                } 
+                              })}
+                              className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 ${
+                                theme === 'dark' 
+                                  ? 'bg-gray-700 border-gray-600 text-white focus:border-purple-500' 
+                                  : 'bg-white border-gray-300 text-gray-900 focus:border-purple-500'
+                              } focus:outline-none`}
+                            >
+                              <option value="neutral">Neutral</option>
+                              <option value="warm">Warm</option>
+                              <option value="cool">Cool</option>
+                              <option value="vibrant">Vibrant</option>
+                              <option value="muted">Muted</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="enhancePrompt"
+                            checked={parameters.enhancePrompt}
+                            onChange={(e) => setParameters({ ...parameters, enhancePrompt: e.target.checked })}
+                            className="mr-3 w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                          />
+                          <label htmlFor="enhancePrompt" className="text-sm font-medium">
+                            Auto-enhance prompt with AI
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex justify-end">
+                <div className="flex justify-center pt-6">
                   <button
                     type="submit"
                     disabled={isGenerating}
-                    className={`px-6 py-3 rounded-md font-medium transition-colors ${
+                    className={`px-12 py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
                       isGenerating
                         ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 hover:from-purple-700 hover:via-pink-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
                     }`}
                   >
                     {isGenerating ? (
-                      <div className="flex items-center">
+                      <div className="flex items-center space-x-3">
                         <LoadingSpinner size="sm" />
-                        <span className="ml-2">Generating...</span>
+                        <span>Neural Processing...</span>
                       </div>
                     ) : (
-                      'Generate Video'
+                      'Generate Neural Video'
                     )}
                   </button>
                 </div>

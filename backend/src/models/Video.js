@@ -52,22 +52,63 @@ const videoSchema = new mongoose.Schema({
     enhancePrompt: {
       type: Boolean,
       default: true
+    },
+    seed: {
+      type: Number,
+      min: 1,
+      max: 999999999,
+      default: null
+    },
+    videoGenerationConfig: {
+      movement: {
+        type: String,
+        enum: ['slow', 'medium', 'fast'],
+        default: 'medium'
+      },
+      camera: {
+        type: String,
+        enum: ['zoom_in', 'zoom_out', 'pan_left', 'pan_right', 'static'],
+        default: 'static'
+      },
+      style: {
+        type: String,
+        enum: ['cinematic', 'photorealistic', 'anime', 'cartoon', 'artistic'],
+        default: 'cinematic'
+      },
+      lighting: {
+        type: String,
+        enum: ['natural', 'sunset', 'sunrise', 'golden_hour', 'blue_hour', 'studio'],
+        default: 'natural'
+      },
+      colorTone: {
+        type: String,
+        enum: ['warm', 'cool', 'neutral', 'vibrant', 'muted'],
+        default: 'neutral'
+      }
     }
   },
   // Input image for image-to-video (optional)
   inputImage: {
     url: String,
-    filename: String
+    filename: String,
+    gcsUri: String, // Google Cloud Storage URI for the input image
+    mimetype: String // MIME type of the uploaded image
   },
   // Generated video information
   video: {
     url: String,
+    urlExpiry: Date, // When signed URL expires
     filename: String,
     size: Number,
     duration: Number,
     resolution: String,
     gcsUri: String, // Google Cloud Storage URI
-    localPath: String // Local path after download
+    localPath: String, // Local path after download
+    data: Buffer, // Binary video data stored in MongoDB
+    contentType: {
+      type: String,
+      default: 'video/mp4'
+    }
   },
   // Google Cloud operation details
   operation: {
