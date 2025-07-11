@@ -126,4 +126,4 @@ MIT
 ---
 
 ## 📬 Contact
-For questions or support, open an issue or contact [SYED-ALI-ml](https://github.com/SYED-ALI-ml). 
+For questions or support, open an issue or contact [SYED-ALI-ml](https://github.com/SYED-ALI-ml).
